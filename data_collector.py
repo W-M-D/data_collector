@@ -63,12 +63,14 @@ class  json_plotter:
     
     def plot_data(self):
         for i,data in enumerate(self.data_array.copy()):
+            print("{} ".format(self.data_array[data][-1:]))
+            temp_array = self.data_array[data][-200:]
             try: 
-                c_time = self.data_array.get('time')
+                c_time = self.data_array.get('time')[-200:]
                 if 'time' not in data:
                     if self.first_graphing_loop:
-                        self.plot_array[data]= self.pw.plot(c_time,self.data_array[data],pen=(i,len(self.data_array.keys())),name=data)
-                    self.plot_array[data].setData(x=c_time,y=self.data_array[data])
+                        self.plot_array[data]= self.pw.plot(c_time,temp_array,pen=(i,len(self.data_array.keys())),name=data)
+                    self.plot_array[data].setData(x=c_time,y=temp_array)
             except AttributeError:
                 print("ERROR")
                 continue
@@ -76,8 +78,6 @@ class  json_plotter:
         self.first_graphing_loop = False
         
     def plot_last_data(self):
-        
-        
         for i,data in enumerate(self.data_array.copy()):
             try: 
                 c_time = self.data_array.get('time')
