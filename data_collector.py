@@ -17,6 +17,7 @@ import socket
 
 
 
+
 class  json_plotter:
     first_graphing_loop = True
 
@@ -63,10 +64,24 @@ class  json_plotter:
     
     def plot_data(self):
         for i,data in enumerate(self.data_array.copy()):
-            print("{} ".format(self.data_array[data][-1:]))
-            temp_array = self.data_array[data][-200:]
             try: 
-                c_time = self.data_array.get('time')[-200:]
+                c_time = self.data_array.get('time')
+                if 'time' not in data:
+                    if self.first_graphing_loop:
+                        self.plot_array[data]= self.pw.plot(c_time,self.data_array[data],pen=(i,len(self.data_array.keys())),name=data)
+                    self.plot_array[data].setData(x=c_time,y=self.data_array[data])
+            except AttributeError:
+                print("ERROR")
+                continue
+        pg.QtGui.QApplication.processEvents()
+        self.first_graphing_loop = False
+        
+    def plot_temp_data(self,size):
+        for i,data in enumerate(self.data_array.copy()):
+            print("{} ".format(self.data_array[data][-1:]))
+            temp_array = self.data_array[data][-size:]
+            try: 
+                c_time = self.data_array.get('time')[-size:]
                 if 'time' not in data:
                     if self.first_graphing_loop:
                         self.plot_array[data]= self.pw.plot(c_time,temp_array,pen=(i,len(self.data_array.keys())),name=data)
@@ -77,7 +92,10 @@ class  json_plotter:
         pg.QtGui.QApplication.processEvents()
         self.first_graphing_loop = False
         
+        
     def plot_last_data(self):
+        
+        
         for i,data in enumerate(self.data_array.copy()):
             try: 
                 c_time = self.data_array.get('time')
@@ -132,14 +150,62 @@ class tcp_data_collection_server:
             print('Socket binded')
             sock.listen(1)
             print('Socket listening')
+            sock.setblocking(0)
+            sock.settimeout(5)
+        except socket.error as msg:
+            print('Error: ' + str(msg[0]) + ': ' + msg[1])
+            sock.close()
+            sys.exit(1)
+        while(1):
+            try:
+                self.conn, addr = sock.accept()
+                print('Connected by', addr)
+                break
+            except BlockingIOError:
+                continue
+    
+            
+
+            
+            
+    def reset_sock(self):
+        if self.IP_VERSION == 'IPv4':
+            self.family_addr = socket.AF_INET
+        elif self.IP_VERSION == 'IPv6':
+            self.family_addr = socket.AF_INET6
+        else:
+            print('IP_VERSION must be IPv4 or IPv6')
+            sys.exit(1)
+
+
+        try:
+            sock = socket.socket(self.family_addr, socket.SOCK_STREAM)
+        except socket.error as msg:
+            print('Error: ' + str(msg[0]) + ': ' + msg[1])
+            sys.exit(1)
+
+        print('Socket created')
+            
+        try:
+            sock.bind(('', self.PORT))
+            print('Socket binded')
+            sock.listen(1)
+            print('Socket listening')
             self.conn, addr = sock.accept()
             print('Connected by', addr)
         except socket.error as msg:
             print('Error: ' + str(msg[0]) + ': ' + msg[1])
             sock.close()
             sys.exit(1)
+
+        
             
     def get_data(self):
+        if self.conn == -1:
+            self.conn.close()
+            self.reset_sock()
+            return -2
+        
         data = self.conn.recv(self.data_size)
         if not data: return -1 
         try:
@@ -183,7 +249,7 @@ if __name__ == '__main__':
                     rest = datas.split("]",1)[0]
                     rest += ']'
                     pl.parse_raw_input_graph(rest)
-                    pl.plot_data()
+                    pl.plot_temp_data(1000)
         
         
         
