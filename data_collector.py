@@ -230,26 +230,58 @@ class tcp_data_collection_server:
 
 if __name__ == '__main__':
     
-        t_serv = tcp_data_collection_server()
-        pl = json_plotter("data")
-        log_path = "./dataout/data{}.json".format(datetime.datetime.now().strftime('_%d_%m_%Y_'))
-        def signal_handler(sig, frame):
-                t_serv.tcp_exit()
-                pl.save_plot_data(log_path)
-                print("Shutdown!")
-                sys.exit(0)
-        signal.signal(signal.SIGINT, signal_handler) 
-        
-        
-        
-        while(1):
-            datas = t_serv.get_data()
-            if  type(datas).__name__ == "str" and  ']' in datas and '[' in datas :
-                if datas is not -1:
-                    rest = datas.split("]",1)[0]
-                    rest += ']'
-                    pl.parse_raw_input_graph(rest)
-                    pl.plot_temp_data(1000)
+        if len(sys.argv) < 2:
+            t_serv = tcp_data_collection_server()
+            pl = json_plotter("data")
+            log_path = "./dataout/data{}.json".format(datetime.datetime.now().strftime('_%d_%m_%Y_'))
+            def signal_handler(sig, frame):
+                    t_serv.tcp_exit()
+                    pl.save_plot_data(log_path)
+                    print("Shutdown!")
+                    sys.exit(0)
+            signal.signal(signal.SIGINT, signal_handler) 
+            
+            
+            
+            while(1):
+                datas = t_serv.get_data()
+                if  type(datas).__name__ == "str" and  ']' in datas and '[' in datas :
+                    if datas is not -1:
+                        rest = datas.split("]",1)[0]
+                        rest += ']'
+                        pl.parse_raw_input_graph(rest)
+                        pl.plot_temp_data(1000)
+        else:
+            pl = json_plotter("data")
+            log_path = "./dataout/data{}.json".format(datetime.datetime.now().strftime('_%d_%m_%Y_'))
+            def signal_handler(sig, frame):
+                    pl.save_plot_data(log_path)
+                    print("Shutdown!")
+                    sys.exit(0)
+            signal.signal(signal.SIGINT, signal_handler) 
+            port = sys.argv[1]
+            baud_rate = int(sys.argv[2])
+            print(port,baud_rate)
+            ser = serial.Serial(port,baud_rate)
+
+            while True:
+                try:
+                    data = ser.read().decode()
+                    if "[" in data:
+                        datas = data
+                        while True:
+                            if ']' in datas:
+                                print(datas)
+                                break
+                            datas += ser.read().decode()
+                        pl.parse_raw_input_graph(datas)
+                        pl.plot_data()
+                except UnicodeDecodeError:
+                    print("Decode_Error")
+                    continue
+
+                    
+
         
         
         
