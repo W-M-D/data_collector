@@ -226,6 +226,17 @@ class tcp_data_collection_server:
 
 
 
+def parse_data_line(data_line):
+    if "[" in data_line:
+        rest = data_line.split("]",1)[0]
+        rest += ']'
+        print(rest)
+        pl.parse_raw_input_graph(data_line)
+        pl.plot_data()
+    else:
+        print(data_line)
+
+
         
 
 if __name__ == '__main__':
@@ -264,18 +275,14 @@ if __name__ == '__main__':
             print(port,baud_rate)
             ser = serial.Serial(port,baud_rate)
 
+            
+            data_line = ""
             while True:
                 try:
-                    data = ser.read().decode()
-                    if "[" in data:
-                        datas = data
-                        while True:
-                            if ']' in datas:
-                                print(datas)
-                                break
-                            datas += ser.read().decode()
-                        pl.parse_raw_input_graph(datas)
-                        pl.plot_data()
+                    data_line += ser.read().decode()
+                    if "\n" in data_line:
+                        parse_data_line(data_line)
+                        data_line = ""
                 except UnicodeDecodeError:
                     print("Decode_Error")
                     continue
